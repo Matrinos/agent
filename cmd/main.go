@@ -30,15 +30,15 @@ import (
 
 const (
 	defHTTPPort                   = "9000"
-	defBootstrapURL               = "http://localhost:8202/things/bootstrap"
-	defBootstrapID                = ""
-	defBootstrapKey               = ""
-	defBootstrapRetries           = "5"
+	defBootstrapURL               = "http://190.190.190.81:8202/things/bootstrap"
+	defBootstrapID                = "00-AC-87-B4-86-EE"
+	defBootstrapKey               = "00e0dcfa-6b46-11e9-a923-1681be663d3e"
+	defBootstrapRetries           = "3"
 	defBootstrapSkipTLS           = "false"
-	defBootstrapRetryDelaySeconds = "10"
-	defLogLevel                   = "info"
-	defEdgexURL                   = "http://localhost:48090/api/v1/"
-	defMqttURL                    = "localhost:1883"
+	defBootstrapRetryDelaySeconds = "3"
+	defLogLevel                   = "debug"
+	defEdgexURL                   = "http://localhost:59882/api/v2/"
+	defMqttURL                    = "190.190.190.81:1883"
 	defCtrlChan                   = ""
 	defDataChan                   = ""
 	defEncryption                 = "false"
@@ -53,7 +53,7 @@ const (
 	defMqttCert                   = "thing.cert"
 	defMqttPrivKey                = "thing.key"
 	defConfigFile                 = "config.toml"
-	defNatsURL                    = nats.DefaultURL
+	defNatsURL                    = "nats://190.190.190.81:4222"
 	defHeartbeatInterval          = "10s"
 	defTermSessionTimeout         = "60s"
 	envConfigFile                 = "MF_AGENT_CONFIG_FILE"
@@ -108,6 +108,7 @@ func main() {
 		logger.Error(fmt.Sprintf("Failed to load config: %s", err))
 	}
 
+	logger.Info(fmt.Sprintf("Current NATS URL: %s", cfg.Server.NatsURL))
 	nc, err := nats.Connect(cfg.Server.NatsURL)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to connect to NATS: %s %s", err, cfg.Server.NatsURL))
@@ -117,6 +118,7 @@ func main() {
 
 	mqttClient, err := connectToMQTTBroker(cfg.MQTT, logger)
 	if err != nil {
+		fmt.Println("Error happens in connectToMQTTBroker")
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
@@ -170,6 +172,9 @@ func loadEnvConfig() (agent.Config, error) {
 		NatsURL: mainflux.Env(envNatsURL, defNatsURL),
 		Port:    mainflux.Env(envHTTPPort, defHTTPPort),
 	}
+
+	fmt.Printf("Server config: %v\n", sc)
+
 	cc := agent.ChanConfig{
 		Control: mainflux.Env(envCtrlChan, defCtrlChan),
 		Data:    mainflux.Env(envDataChan, defDataChan),
@@ -227,6 +232,7 @@ func loadEnvConfig() (agent.Config, error) {
 
 	file := mainflux.Env(envConfigFile, defConfigFile)
 	c := agent.NewConfig(sc, cc, ec, lc, mc, ch, ct, file)
+	fmt.Printf("Agent config: %v\n", c)
 	mc, err = loadCertificate(c.MQTT)
 	if err != nil {
 		return c, errors.Wrap(errFailedToSetupMTLS, err)
@@ -240,6 +246,9 @@ func loadEnvConfig() (agent.Config, error) {
 func loadBootConfig(c agent.Config, logger logger.Logger) (bsc agent.Config, err error) {
 	file := mainflux.Env(envConfigFile, defConfigFile)
 	skipTLS, err := strconv.ParseBool(mainflux.Env(envBootstrapSkipTLS, defBootstrapSkipTLS))
+	if err != nil {
+		return c, err
+	}
 	bsConfig := bootstrap.Config{
 		URL:           mainflux.Env(envBootstrapURL, defBootstrapURL),
 		ID:            mainflux.Env(envBootstrapID, defBootstrapID),
@@ -272,16 +281,25 @@ func loadBootConfig(c agent.Config, logger logger.Logger) (bsc agent.Config, err
 	}
 
 	bsc.MQTT = mc
+	// Why bsc lose server config?Current NATS URL
+	bsc.Server = c.Server
+	bsc.MQTT = c.MQTT
 	return bsc, nil
 }
 
 func connectToMQTTBroker(conf agent.MQTTConfig, logger logger.Logger) (mqtt.Client, error) {
+	logger.Debug(fmt.Sprintf("MQTT Config URL: %v", conf.URL))
+	logger.Debug(fmt.Sprintf("MQTT Config Username: %v", conf.Username))
+	logger.Debug(fmt.Sprintf("MQTT Config Password: %v", conf.Password))
+	// logger.Debug(fmt.Sprintf("MQTT Config Channel: %v"))
+
 	name := fmt.Sprintf("agent-%s", conf.Username)
 	conn := func(client mqtt.Client) {
 		logger.Info(fmt.Sprintf("Client %s connected", name))
 	}
 
 	lost := func(client mqtt.Client, err error) {
+		logger.Error(err.Error())
 		logger.Info(fmt.Sprintf("Client %s disconnected", name))
 	}
 

@@ -1,0 +1,36 @@
+File = "config.toml"
+
+[channels]
+  control = "6631e8e5-df48-44e4-bcc0-6e6191cb1b68"
+  data = "8fefdd5e-ad30-4397-90cf-7b3d94089cad"
+
+[edgex]
+  url = ""
+
+[heartbeat]
+  interval = "0s"
+
+[log]
+  level = ""
+
+[mqtt]
+  ca_cert = ""
+  ca_path = ""
+  cert_path = ""
+  client_cert = ""
+  client_key = ""
+  mtls = false
+  password = "6e0f0fe5-5a2f-43ef-be5e-a424ba2c7f0c"
+  priv_key_path = ""
+  qos = 0
+  retain = false
+  skip_tls_ver = false
+  url = ""
+  username = "931c0052-1d6b-44bf-931c-0b805d5177a7"
+
+[server]
+  nats_url = ""
+  port = ""
+
+[terminal]
+  session_timeout = "0s"

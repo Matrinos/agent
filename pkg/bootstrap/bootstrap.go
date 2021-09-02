@@ -8,12 +8,12 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"os"
+	"time"
 
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/mainflux/agent/pkg/agent"
 
@@ -91,17 +91,19 @@ func Bootstrap(cfg Config, logger log.Logger, file string) error {
 			break
 		}
 		logger.Error(fmt.Sprintf("Fetching bootstrap failed with error: %s", err))
-		logger.Debug(fmt.Sprintf("Retries remaining: %d. Retrying in %d seconds", retries, retryDelaySec))
+		logger.Debug(fmt.Sprintf("Retries remaining: %d. Retrying in %d seconds", retries-uint64(i), retryDelaySec))
 		time.Sleep(time.Duration(retryDelaySec) * time.Second)
 		if i == int(retries)-1 {
 			logger.Warn("Retries exhausted")
-			logger.Info(fmt.Sprintf("Continuing with local config"))
+			logger.Info("Continuing with local config")
 			return nil
 		}
 	}
 
+	logger.Info(fmt.Sprintf("MainfluxChannels length: %d", len(dc.MainfluxChannels)))
+
 	if len(dc.MainfluxChannels) < 2 {
-		return agent.ErrMalformedEntity
+		return errors.New("channel len should >= 2")
 	}
 
 	ctrlChan := dc.MainfluxChannels[0].ID
@@ -130,9 +132,9 @@ func Bootstrap(cfg Config, logger log.Logger, file string) error {
 	tc := dc.SvcsConf.Agent.Terminal
 	c := agent.NewConfig(sc, cc, ec, lc, mc, hc, tc, file)
 
-	dc.SvcsConf.Export = fillExportConfig(dc.SvcsConf.Export, c)
+	// dc.SvcsConf.Export = fillExportConfig(dc.SvcsConf.Export, c)
 
-	saveExportConfig(dc.SvcsConf.Export, logger)
+	// saveExportConfig(dc.SvcsConf.Export, logger)
 
 	return agent.SaveConfig(c)
 }
@@ -220,15 +222,15 @@ func getConfig(bsID, bsKey, bsSvrURL string, skipTLS bool, logger log.Logger) (d
 	}
 	defer resp.Body.Close()
 	dc := deviceConfig{}
-	h := ConfigContent{}
-	if err := json.Unmarshal([]byte(body), &h); err != nil {
-		return deviceConfig{}, err
-	}
-	fmt.Println(h.Content)
+	// h := ConfigContent{}
+	// if err := json.Unmarshal([]byte(body), &h); err != nil {
+	// 	return deviceConfig{}, err
+	// }
+	// fmt.Println(h.Content)
 	sc := ServicesConfig{}
-	if err := json.Unmarshal([]byte(h.Content), &sc); err != nil {
-		return deviceConfig{}, err
-	}
+	// if err := json.Unmarshal([]byte(h.Content), &sc); err != nil {
+	// 	return deviceConfig{}, err
+	// }
 	if err := json.Unmarshal([]byte(body), &dc); err != nil {
 		return deviceConfig{}, err
 	}
