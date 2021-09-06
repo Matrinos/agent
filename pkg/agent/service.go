@@ -190,6 +190,7 @@ func (a *agent) Execute(uuid, cmd string) (string, error) {
 }
 
 func (a *agent) Control(uuid, cmdStr string) error {
+
 	cmdArgs := strings.Split(strings.Replace(cmdStr, " ", "", -1), ",")
 	if len(cmdArgs) < 2 {
 		return errInvalidCommand
@@ -208,9 +209,13 @@ func (a *agent) Control(uuid, cmdStr string) error {
 		resp, err = a.edgexClient.FetchMetrics(cmdArgs[1:])
 	case "edgex-ping":
 		resp, err = a.edgexClient.Ping()
+	case "edgex-control":
+		resp, err = a.edgexClient.ControlDevice(cmdArgs[1:])
 	default:
 		err = errUnknownCommand
 	}
+
+	fmt.Println(resp)
 
 	if err != nil {
 		return errors.Wrap(errEdgexFailed, err)

@@ -6,6 +6,7 @@ package edgex
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -26,6 +27,8 @@ type Client interface {
 	// FetchMetrics - fetches metrics from EdgeX components
 	FetchMetrics(cmdArr []string) (string, error)
 
+	ControlDevice(cmdArr []string) (string, error)
+
 	// Ping - ping EdgeX SMA
 	Ping() (string, error)
 }
@@ -41,6 +44,38 @@ func NewClient(edgexURL string, logger log.Logger) Client {
 		url:    edgexURL,
 		logger: logger,
 	}
+}
+
+// ControlDevice - control device
+func (ec *edgexClient) ControlDevice(cmdArr []string) (string, error) {
+
+	url := "http://192.168.124.150:59882/api/v2/device/name/Nader100/SwitchCommand"
+	fmt.Printf("EdgeX Url: %v\n", url)
+	data, err := json.Marshal(map[string]string{
+		"Switch": "65280",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(data))
+	if err != nil {
+		return "", err
+	}
+	defer req.Body.Close()
+	// set the request header Content-Type for json
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
 }
 
 // PushOperation - pushes operation to EdgeX components
