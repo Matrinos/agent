@@ -190,38 +190,47 @@ func (a *agent) Execute(uuid, cmd string) (string, error) {
 }
 
 func (a *agent) Control(uuid, cmdStr string) error {
+	var action edgex.Action
 
-	cmdArgs := strings.Split(strings.Replace(cmdStr, " ", "", -1), ",")
-	if len(cmdArgs) < 2 {
-		return errInvalidCommand
+	if err := json.Unmarshal([]byte(cmdStr), &action); err != nil {
+		return err
 	}
 
-	var resp string
-	var err error
+	fmt.Println(action)
 
-	cmd := cmdArgs[0]
-	switch cmd {
-	case "edgex-operation":
-		resp, err = a.edgexClient.PushOperation(cmdArgs[1:])
-	case "edgex-config":
-		resp, err = a.edgexClient.FetchConfig(cmdArgs[1:])
-	case "edgex-metrics":
-		resp, err = a.edgexClient.FetchMetrics(cmdArgs[1:])
-	case "edgex-ping":
-		resp, err = a.edgexClient.Ping()
-	case "edgex-control":
-		resp, err = a.edgexClient.ControlDevice(cmdArgs[1:])
-	default:
-		err = errUnknownCommand
-	}
+	resp, err := a.edgexClient.Dispatch(action)
 
-	fmt.Println(resp)
+	// cmdArgs := strings.Split(strings.Replace(cmdStr, " ", "", -1), ",")
+	// if len(cmdArgs) < 2 {
+	// 	return errInvalidCommand
+	// }
+
+	// var resp string
+	// var err error
+
+	// cmd := cmdArgs[0]
+	// switch cmd {
+	// case "edgex-operation":
+	// 	resp, err = a.edgexClient.PushOperation(cmdArgs[1:])
+	// case "edgex-config":
+	// 	resp, err = a.edgexClient.FetchConfig(cmdArgs[1:])
+	// case "edgex-metrics":
+	// 	resp, err = a.edgexClient.FetchMetrics(cmdArgs[1:])
+	// case "edgex-ping":
+	// 	resp, err = a.edgexClient.Ping()
+	// case "edgex-control":
+	// 	resp, err = a.edgexClient.Dispatch(cmdArgs[1:])
+	// default:
+	// 	err = errUnknownCommand
+	// }
+
+	// fmt.Println(resp)
 
 	if err != nil {
 		return errors.Wrap(errEdgexFailed, err)
 	}
 
-	return a.processResponse(uuid, cmd, resp)
+	return a.processResponse(uuid, control, resp)
 }
 
 // Message for this command

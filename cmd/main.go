@@ -37,7 +37,7 @@ const (
 	defBootstrapSkipTLS           = "false"
 	defBootstrapRetryDelaySeconds = "3"
 	defLogLevel                   = "debug"
-	defEdgexURL                   = "http://localhost:59882/api/v2/"
+	defEdgexURL                   = "http://localhost:59882/api/v2"
 	defMqttURL                    = "190.190.190.81:1883"
 	defCtrlChan                   = ""
 	defDataChan                   = ""
@@ -158,7 +158,7 @@ func main() {
 	}()
 
 	go func() {
-		c := make(chan os.Signal)
+		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT)
 		errs <- fmt.Errorf("%s", <-c)
 	}()
@@ -281,9 +281,10 @@ func loadBootConfig(c agent.Config, logger logger.Logger) (bsc agent.Config, err
 	}
 
 	bsc.MQTT = mc
-	// Why bsc lose server config?Current NATS URL
+	// Why bsc lose server config?
 	bsc.Server = c.Server
 	bsc.MQTT = c.MQTT
+	bsc.Edgex = c.Edgex
 	return bsc, nil
 }
 

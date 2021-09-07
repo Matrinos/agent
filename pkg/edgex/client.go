@@ -16,6 +16,12 @@ import (
 	model "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
+type Action struct {
+	DeviceName    string                 `json:"deviceName"`
+	DeviceCommand string                 `json:"deviceCommand"`
+	Payload       map[string]interface{} `json:"payload"`
+}
+
 type Client interface {
 
 	// PushOperation - pushes operation to EdgeX components
@@ -27,7 +33,10 @@ type Client interface {
 	// FetchMetrics - fetches metrics from EdgeX components
 	FetchMetrics(cmdArr []string) (string, error)
 
-	ControlDevice(cmdArr []string) (string, error)
+	// ControlDevice(cmdArr []string) (string, error)
+
+	// Dispatch a action
+	Dispatch(action Action) (string, error)
 
 	// Ping - ping EdgeX SMA
 	Ping() (string, error)
@@ -47,13 +56,17 @@ func NewClient(edgexURL string, logger log.Logger) Client {
 }
 
 // ControlDevice - control device
-func (ec *edgexClient) ControlDevice(cmdArr []string) (string, error) {
+func (ec *edgexClient) Dispatch(action Action) (string, error) {
+	var (
+		deviceName    = action.DeviceName
+		deviceCommand = action.DeviceCommand
+		payload       = action.Payload
+	)
 
-	url := "http://192.168.124.150:59882/api/v2/device/name/Nader100/SwitchCommand"
+	url := fmt.Sprintf("%s/device/name/%s/%s", ec.url, deviceName, deviceCommand)
 	fmt.Printf("EdgeX Url: %v\n", url)
-	data, err := json.Marshal(map[string]string{
-		"Switch": "65280",
-	})
+
+	data, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
