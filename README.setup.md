@@ -82,6 +82,16 @@ MF_AGENT_NATS_URL=nats://190.190.190.81:4222 \
 build/mainflux-agent
 ```
 
+Or use docker:
+```bash
+docker build -t matrinos/mainflux-agent .
+docker run -d \
+  -p 9000:9000 \
+  --env-file=.env \
+  --network=prod_edgex-network \
+  --name mainflux-agent \
+  matrinos/mainflux-agent
+```
 
 ### MQTT publish and subcribe
 
@@ -95,7 +105,7 @@ mosquitto_sub \
 # Publish to control channel
 mosquitto_pub \
   -u 931c0052-1d6b-44bf-931c-0b805d5177a7 -P 6e0f0fe5-5a2f-43ef-be5e-a424ba2c7f0c \
-  -t channels/6631e8e5-df48-44e4-bcc0-6e6191cb1b68/messages/req \
+  -t channels/6631e8e5-df48-44e4-bcc0-6e6191cb1b68/messages/cmd \
   -i kyya-9527 \
-  -h 190.190.190.81 -p 1883 -m '[{"bn":"1:", "n":"config", "vs":"view"}]'  
+  -h 190.190.190.81 -p 1883 -m '{"deviceName":"Nader100", "deviceCommand":"SwitchCommand", "payload":{"Switch":"65280"}}'
 ```
